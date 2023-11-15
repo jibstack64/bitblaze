@@ -1,6 +1,7 @@
 # bitblaze
 
-![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/jibstack64/bitblaze) ![GitHub License](https://img.shields.io/github/license/jibstack64/bitblaze) 
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/jibstack64/bitblaze) ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/jibstack64/bitblaze/c-cpp.yml)
+ ![GitHub License](https://img.shields.io/github/license/jibstack64/bitblaze) 
 
 An esoteric programming language developed during mid-class boredom.
 
