@@ -5,6 +5,8 @@
 
 An esoteric programming language developed during mid-class boredom.
 
+[Example scripts](https://github.com/jibstack64/bitblaze/tree/main/examples)
+
 | **Key** | **Function**                                                                                                                                                                                                                                      | **Cursor movement** |
 |---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|
 |    v    | Represents a 0 bit.                                                                                                                                                                                                                               |          0          |
