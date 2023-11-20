@@ -2,6 +2,7 @@
 #include "buffer.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 char *g_buffer = NULL;
 int g_bufp = 0;
@@ -154,98 +155,77 @@ void interpret(Block *blocks, bool debug) {
   }
 }
 
-int main(void) {
+/* Displays the help message. */
+void help() {
+	printf("\n");
+	printf("A list of characters and their functions:\n");
+	printf("\tv | ^  Represent binary 0s and 1s.\n");
+	printf("\t< | >  Used to navigate left and right through the buffer.\n");
+	printf("\t  ~    Navigates to the position, specified by the current "
+       "cell's value, in the buffer.\n");
+	printf("\t+ | -  Add 1 / remove 1 from the current cell.\n");
+	printf("\t  [    Used to open standard loops. These loops "
+       "continue as long as the current cell's value is above 0.\n");
+	printf("\t  (    Opening for auto-loops. These "
+       "loops remove 1 from the cell they are instanciated at until "
+       "mentioned cell's value reaches 0.\n");
+	printf("\t  {    Opens a function block. The function data is stored "
+       "seperately and assigned an ID. This ID is automatically assigned "
+       "to the currently selected cell.\n");
+	printf("\t  ;    Signifies the end of a loop, auto loop or function "
+       "block. Can also be used to end the program, if used outside of a "
+       "nested block.\n");
+	printf("\t  #    Shifts through every character in the buffer from the "
+       "cell it is called at and prints each cell value until a null "
+       "byte is reached. Does NOT change the current cell.\n");
+	printf("\t  ?    Takes a single character input from the user and stores "
+       "it in the current cell.\n");
+	printf("\t  *    Runs the function that matches the ID the current cell "
+       "holds, if any.\n");
+	printf(
+			"\t  \"    Open/close a string. When you declare a string, the "
+			"bytes within it are spread across the cells following that of "
+			"which you declared the string at. The current cell position is "
+			"shifted to the one that houses the last character of the string.\n");
+	printf("\n");
+}
 
-  // Debug mode?
-  printf("Debug mode? (y/N): ");
-  char debug_mode;
-  if (scanf(" %c", &debug_mode) < 1) {
-    return 1;
-  }
-  debug_mode = debug_mode == 'y' ? true : false;
+int main(int argc, const char** argv) {
 
-  // Absorb newline
-  getchar();
+	bool debug_mode = false;
 
-  // Allow quitting and help
-  printf("\nEnter 'h' if you need help, or 'q' to quit the interpreter.\n\n");
+	if (argc < 2) {
+		printf("Usage: %s [-h | [code] [code] ...]\n", argv[0]);
+		return 1;
+	} else if (!strcmp(argv[1], "--help")) {
+		help();
+		return 0;
+	}
+	
+	// Execute each codeblock
+	for (int i = 1; i < argc; i++) {
+		Block *blocks = to_blocks(argv[i]);
+		char *errors = block_errors(blocks, BUFFER_SIZE);
 
-  char buf[BUFFER_SIZE];
-  for (;;) {
+		if (strlen(errors) != 0) {
+			for (int i = 0; i < BUFFER_SIZE; i++) {
+				if (errors[i] == '\0') {
+					break;
+				}
+				printf("invalid character '%c'\n", errors[i]);
+			}
+			continue;
+		}
 
-    // Take user input
-    printf(">>> ");
-    if (fgets(buf, BUFFER_SIZE, stdin) == NULL) {
-      continue;
-    }
+		// Run the code
+		interpret(blocks, debug_mode);
 
-    switch (buf[0]) {
-    case 'q':
-    case 'Q': {
-      free(g_buffer);
-      return 0;
-    }
-    case 'h':
-    case 'H': {
+		// Free allocated memory
+		free_blocks(blocks);
+		free(errors);
 
-      printf("\n");
-      printf("A list of characters and their functions:\n");
-      printf("\tv | ^  Represent binary 0s and 1s.\n");
-      printf("\t< | >  Used to navigate left and right through the buffer.\n");
-      printf("\t  ~    Navigates to the position, specified by the current "
-             "cell's value, in the buffer.\n");
-      printf("\t+ | -  Add 1 / remove 1 from the current cell.\n");
-      printf("\t  [    Used to open standard loops. These loops "
-             "continue as long as the current cell's value is above 0.\n");
-      printf("\t  (    Opening for auto-loops. These "
-             "loops remove 1 from the cell they are instanciated at until "
-             "mentioned cell's value reaches 0.\n");
-      printf("\t  {    Opens a function block. The function data is stored "
-             "seperately and assigned an ID. This ID is automatically assigned "
-             "to the currently selected cell.\n");
-      printf("\t  ;    Signifies the end of a loop, auto loop or function "
-             "block. Can also be used to end the program, if used outside of a "
-             "nested block.\n");
-      printf("\t  #    Shifts through every character in the buffer from the "
-             "cell it is called at and prints each cell value until a null "
-             "byte is reached. Does NOT change the current cell.\n");
-      printf("\t  ?    Takes a single character input from the user and stores "
-             "it in the current cell.\n");
-      printf("\t  *    Runs the function that matches the ID the current cell "
-             "holds, if any.\n");
-      printf(
-          "\t  \"    Open/close a string. When you declare a string, the "
-          "bytes within it are spread across the cells following that of "
-          "which you declared the string at. The current cell position is "
-          "shifted to the one that houses the last character of the string.\n");
-      printf("\n");
-
-      continue;
-    }
-    }
-
-    // Blockify and check for errors
-    Block *blocks = to_blocks(buf);
-    char *errors = block_errors(blocks, BUFFER_SIZE);
-
-    if (strlen(errors) != 0) {
-      for (int i = 0; i < BUFFER_SIZE; i++) {
-        if (errors[i] == '\0') {
-          break;
-        }
-        printf("invalid character '%c'\n", errors[i]);
-      }
-      continue;
-    }
-
-    // Run the code
-    interpret(blocks, (bool)debug_mode);
-
-    // Free allocated memory
-    free_blocks(blocks);
-    free(errors);
-  }
-
+	}
+	
   // At the end because it's used during each loop
   free(g_buffer);
   for (int i = 0; i < g_funp; i++) {

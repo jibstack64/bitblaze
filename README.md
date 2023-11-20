@@ -5,6 +5,9 @@
 
 An esoteric programming language developed during mid-class boredom.
 
+Usage:
+`./main $(cat my_script.bb)` or `./main +++>>> +<# ...`
+
 [Example scripts](https://github.com/jibstack64/bitblaze/tree/main/examples)
 
 | **Key** | **Function**                                                                                                                                                                                                                                      | **Cursor movement** |
