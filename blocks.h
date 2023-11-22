@@ -39,7 +39,7 @@ typedef struct {
 
 /* Converts an `Action` to it's title.
  * Mostly useful for debugging. */
-const char *action_str(Action a) {
+const char* action_str(Action a) {
   switch (a) {
   case ACT_SET:
     return "set value";
@@ -77,20 +77,24 @@ const char *action_str(Action a) {
 
 /* Frees all `blocks` and their data, including nested loop blocks. */
 void free_blocks(Block *blocks) {
-  int position = 0;
-  while (blocks[position].action != ACT_END) {
-    Block *block = &(blocks[position]);
+  Block* origin = blocks;
+	while (blocks->action != ACT_END) {
+		
+		if (blocks->value != NULL) {
 
-    if (block->action == ACT_LOOP || block->action == ACT_AUTO_LOOP) {
-      free_blocks((Block *)(block->value));
+			if (blocks->action == ACT_LOOP || blocks->action == ACT_AUTO_LOOP
+						|| blocks->action == ACT_FUNCTION) {
+				free_blocks((Block *)(blocks->value));
+			
+			} else {
+				free(blocks->value);
+			}
 
-    } else if (block->value != NULL) {
-      free(block->value);
-    }
+		}
 
-    position++;
+    blocks++;
   }
-  free(blocks);
+  free(origin);
 }
 
 /* Seeks to the end of `blocks` and returns the resulting length (including the

@@ -3,14 +3,100 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <getopt.h>
+#include <limits.h>
 
 char *g_buffer = NULL;
 int g_bufp = 0;
 Block **g_functions = NULL;
 int g_funp = 0;
 
-/* Conglomorate of all of the parsing, interpretation, and execution
- * functions. */
+void interpret(Block*, bool);
+void help(struct option[]);
+void manual(void);
+char* read_file(char* fn);
+
+int main(int argc, char** argv) {
+	
+	struct option long_options[] = {
+
+		/* code input methods */
+		{ "code", required_argument, NULL, 'c' },
+
+		/* flags */
+		{ "help", no_argument, NULL, 'h' }, 
+		{ "visual", no_argument, NULL, 'v' },
+		{ "manual", no_argument, NULL, 'm' },
+		
+		{ NULL, 0, NULL, 0 }
+
+	};
+
+	/* v^v^v */
+	char code[8192]; code[0] = '\0';
+	bool visual = false;
+	
+	/* process arguments */
+	int opt;
+	while ((opt = getopt_long(argc, argv, "hmvf:c:", long_options, NULL)) != -1) {
+		switch (opt) {
+
+			case 'c':
+				strcpy(code, optarg);
+				break;
+		
+			case 'h':
+				help(long_options);
+				exit(EXIT_SUCCESS);
+
+			case 'v':
+				visual = true;
+				break;
+
+			case 'm':
+				manual();
+				exit(EXIT_SUCCESS);
+			
+			default:
+				help(long_options);
+				exit(EXIT_FAILURE);
+		
+		}
+	}
+
+	if (code[0] == '\0') {
+		printf("No code provided.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/* blocks -> errors -> interpret */
+	Block *blocks = to_blocks(code);
+	char *errors = block_errors(blocks, BUFFER_SIZE);
+	if (strlen(errors) != 0) {
+		for (int i = 0; i < BUFFER_SIZE; i++) {
+			if (errors[i] == '\0') {
+				break;
+			}
+			printf("invalid character '%c'\n", errors[i]);
+		}
+		exit(EXIT_FAILURE);	
+	}
+
+	// Run the code
+	interpret(blocks, visual);
+
+	// Free allocated memory
+	free_blocks(blocks);
+	free(errors);
+	free(g_buffer);
+  for (int i = 0; i < g_funp; i++) {
+    free(g_functions[i]);
+  }
+  free(g_functions);
+
+  return 0;
+}
+
 void interpret(Block *blocks, bool debug) {
 
   // Get number of blocks
@@ -155,8 +241,32 @@ void interpret(Block *blocks, bool debug) {
   }
 }
 
-/* Displays the help message. */
-void help() {
+void help(struct option opts[]) {
+	printf("\n");
+	printf("Parameters: \n");
+	while (opts->name != NULL) {
+		printf(" --%s/-%c", opts->name, opts->val);
+		switch (opts->has_arg) {
+
+			case required_argument:
+				printf(" <arg>");
+				break;
+
+			case optional_argument:
+				printf(" [arg]");
+				break;
+
+			default:
+				break;
+
+		}
+		printf("\n");
+		opts++;
+	}
+	printf("\n");
+}
+
+void manual() {
 	printf("\n");
 	printf("A list of characters and their functions:\n");
 	printf("\tv | ^  Represent binary 0s and 1s.\n");
@@ -190,48 +300,30 @@ void help() {
 	printf("\n");
 }
 
-int main(int argc, const char** argv) {
-
-	bool debug_mode = false;
-
-	if (argc < 2) {
-		printf("Usage: %s [-h | [code] [code] ...]\n", argv[0]);
-		return 1;
-	} else if (!strcmp(argv[1], "--help")) {
-		help();
-		return 0;
+char* read_file(char* fn) {
+	FILE* file = fopen(fn, "r");
+	if (file == NULL) {
+		return NULL;
 	}
-	
-	// Execute each codeblock
-	for (int i = 1; i < argc; i++) {
-		Block *blocks = to_blocks(argv[i]);
-		char *errors = block_errors(blocks, BUFFER_SIZE);
 
-		if (strlen(errors) != 0) {
-			for (int i = 0; i < BUFFER_SIZE; i++) {
-				if (errors[i] == '\0') {
-					break;
-				}
-				printf("invalid character '%c'\n", errors[i]);
-			}
-			continue;
-		}
+	char* buffer; long fs;
+	fseek(file, 0, SEEK_END);
+	fs = ftell(file);
+	rewind(file);
 
-		// Run the code
-		interpret(blocks, debug_mode);
-
-		// Free allocated memory
-		free_blocks(blocks);
-		free(errors);
-
+	buffer = (char*)malloc(fs+1);
+	if (buffer == NULL) {
+		return NULL;
 	}
-	
-  // At the end because it's used during each loop
-  free(g_buffer);
-  for (int i = 0; i < g_funp; i++) {
-    free(g_functions[i]);
-  }
-  free(g_functions);
 
-  return 0;
+	if (fread(buffer, 1, fs, file) != fs) {
+		free(buffer); fclose(file); return NULL;
+	}
+
+	buffer[fs] = '\0'; // valid c string :)
+	
+	fclose(file);
+
+	return buffer;
 }
+
