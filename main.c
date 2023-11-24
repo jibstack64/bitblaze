@@ -7,7 +7,11 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include <ncursesw/ncurses.h>
+#else
 #include <ncurses.h>
+#endif
 #include <math.h>
 
 char *g_buffer = NULL;
