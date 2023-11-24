@@ -5,15 +5,20 @@
 #include <string.h>
 #include <getopt.h>
 #include <limits.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <ncurses.h>
+#include <math.h>
 
 char *g_buffer = NULL;
 int g_bufp = 0;
 Block **g_functions = NULL;
 int g_funp = 0;
 
-void interpret(Block*, bool);
+void interpret(Block*, bool, int);
 void help(struct option[]);
 void manual(void);
+void draw_gbuffer(Block*);
 char* read_file(char* fn);
 
 int main(int argc, char** argv) {
@@ -22,6 +27,7 @@ int main(int argc, char** argv) {
 
 		/* code input methods */
 		{ "code", required_argument, NULL, 'c' },
+		{ "sleep", required_argument, NULL, 's' },
 
 		/* flags */
 		{ "help", no_argument, NULL, 'h' }, 
@@ -35,16 +41,24 @@ int main(int argc, char** argv) {
 	/* v^v^v */
 	char code[8192]; code[0] = '\0';
 	bool visual = false;
+	int sleep_amount = 0;
 	
 	/* process arguments */
 	int opt;
-	while ((opt = getopt_long(argc, argv, "hmvf:c:", long_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "hmvc:s:", long_options, NULL)) != -1) {
 		switch (opt) {
 
 			case 'c':
 				strcpy(code, optarg);
 				break;
-		
+			
+			case 's':
+				sleep_amount = atoi(optarg);
+				if (sleep_amount < 0) {
+					sleep_amount = 0;
+				}
+				break;
+
 			case 'h':
 				help(long_options);
 				exit(EXIT_SUCCESS);
@@ -66,6 +80,7 @@ int main(int argc, char** argv) {
 
 	if (code[0] == '\0') {
 		printf("No code provided.\n");
+		help(long_options);
 		exit(EXIT_FAILURE);
 	}
 
@@ -83,21 +98,36 @@ int main(int argc, char** argv) {
 	}
 
 	// Run the code
-	interpret(blocks, visual);
+	if (visual) {
+
+    initscr();
+    cbreak(); 
+    keypad(stdscr, TRUE); 
+    noecho();
+
+		interpret(blocks, visual, sleep_amount);
+    
+    endwin();
+
+	} else {
+
+		interpret(blocks, visual, sleep_amount);
+	
+	}
 
 	// Free allocated memory
 	free_blocks(blocks);
 	free(errors);
 	free(g_buffer);
-  for (int i = 0; i < g_funp; i++) {
-    free(g_functions[i]);
-  }
-  free(g_functions);
+	for (int i = 0; i < g_funp; i++) {
+		free(g_functions[i]);
+	}
+	free(g_functions);
 
   return 0;
 }
 
-void interpret(Block *blocks, bool debug) {
+void interpret(Block *blocks, bool visual, int wait) {
 
   // Get number of blocks
   int blocks_l = count_blocks(blocks);
@@ -159,7 +189,7 @@ void interpret(Block *blocks, bool debug) {
     case ACT_LOOP: {
 
       while (g_buffer[g_bufp] > 0) {
-        interpret((Block *)current_block->value, false);
+        interpret((Block *)current_block->value, visual, wait);
       }
 
       break;
@@ -169,7 +199,7 @@ void interpret(Block *blocks, bool debug) {
 
       char *iter_count = &(g_buffer[g_bufp]);
       while (*iter_count > 0) {
-        interpret((Block *)current_block->value, false);
+        interpret((Block *)current_block->value, visual, wait);
         *iter_count -= 1;
       }
 
@@ -202,7 +232,7 @@ void interpret(Block *blocks, bool debug) {
 
     case ACT_RUN: {
 
-      interpret(g_functions[(int)(g_buffer[g_bufp])], false);
+      interpret(g_functions[(int)(g_buffer[g_bufp])], visual, wait);
 
       break;
     }
@@ -229,15 +259,12 @@ void interpret(Block *blocks, bool debug) {
     } else if (g_bufp > BUFFER_SIZE - 1) {
       g_bufp = 0;
     }
-  }
+		
+		if (visual) {
+			draw_gbuffer(current_block);
+		}
 
-  if (debug) {
-    // Print the g_buffer
-    printf("\n");
-    for (int i = 0; i < BUFFER_SIZE; i++) {
-      printf("%d ", g_buffer[i]);
-    }
-    printf("\n");
+		sleep(wait);
   }
 }
 
@@ -298,6 +325,32 @@ void manual() {
 			"which you declared the string at. The current cell position is "
 			"shifted to the one that houses the last character of the string.\n");
 	printf("\n");
+}
+
+void draw_gbuffer(Block* blk) {
+	clear();
+	int w, h;
+	int x = 0, y = 0;
+	getmaxyx(stdscr, w, h);
+	for (int i = 0; i < BUFFER_SIZE; i++) {
+		char buf[5]; buf[3] = ' '; buf[4] = '\0';
+		for (int j = 0; j < 4; j++) {
+			buf[j] = ' ';
+		}
+		sprintf(buf, "%d", (int)(g_buffer[i]));
+		mvprintw(x+1, y, "%s", buf);
+		y++;
+		if (y > w) {
+			x++;
+			y = 0;
+		}
+		if (x > h) {
+			break;
+		}
+	}
+
+	mvprintw(0, 0, "%s", action_str(blk->action)); 
+	refresh();
 }
 
 char* read_file(char* fn) {

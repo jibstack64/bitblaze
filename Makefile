@@ -1,7 +1,7 @@
 all: main
 
 CC = gcc
-override CFLAGS += -g -Wall -pthread -lm
+override CFLAGS += -g -Wall -pthread -lm -lncurses
 
 SRCS = $(shell find . -name '.ccls-cache' -type d -prune -o -type f -name '*.c' -print)
 HEADERS = $(shell find . -name '.ccls-cache' -type d -prune -o -type f -name '*.h' -print)
