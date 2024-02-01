@@ -39,7 +39,7 @@ typedef struct {
 
 /* Converts an `Action` to it's title.
  * Mostly useful for debugging. */
-const char* action_str(Action a) {
+extern inline const char* action_str(Action a) {
   switch (a) {
   case ACT_SET:
     return "set value";
@@ -76,7 +76,7 @@ const char* action_str(Action a) {
 }
 
 /* Frees all `blocks` and their data, including nested loop blocks. */
-void free_blocks(Block *blocks) {
+extern inline void free_blocks(Block *blocks) {
   Block* origin = blocks;
 	while (blocks->action != ACT_END) {
 		
@@ -99,7 +99,7 @@ void free_blocks(Block *blocks) {
 
 /* Seeks to the end of `blocks` and returns the resulting length (including the
  * end block). */
-int count_blocks(Block *blocks) {
+extern inline int count_blocks(Block *blocks) {
   int position = 0;
   while (blocks[position].action != ACT_END) {
     position++;
@@ -109,7 +109,7 @@ int count_blocks(Block *blocks) {
 
 /* Prints `blocks` to the screen, increasing the `tab` with each level of loop
  * nesting. */
-void print_blocks(Block *blocks, int tab) {
+extern inline void print_blocks(Block *blocks, int tab) {
   int i = 0;
   while (blocks[i].action != ACT_END) {
     for (int t = 0; t < tab; t++) {
@@ -124,7 +124,7 @@ void print_blocks(Block *blocks, int tab) {
 }
 
 /* Finds all errors in `blocks`. */
-char *block_errors(Block *blocks, int chs) {
+extern inline char *block_errors(Block *blocks, int chs) {
   char *errors = (char *)malloc(sizeof(char) * (chs + 1));
   int errp = 0;
 
@@ -164,7 +164,7 @@ char *block_errors(Block *blocks, int chs) {
 }
 
 /* Attempts to parse `code` to `Block`s. */
-Block *to_blocks(const char *code) {
+extern inline Block *to_blocks(const char *code) {
   int code_l = strlen(code);
   Block *blocks = (Block *)malloc(sizeof(Block) * (code_l + 1));
 

@@ -28,7 +28,6 @@ char* read_file(char* fn);
 int main(int argc, char** argv) {
 	
 	struct option long_options[] = {
-
 		/* code input methods */
 		{ "code", required_argument, NULL, 'c' },
 		{ "sleep", required_argument, NULL, 's' },

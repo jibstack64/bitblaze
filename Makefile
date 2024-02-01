@@ -1,16 +1,17 @@
-all: main
 
 CC = gcc
-override CFLAGS += -g -Wall -pthread -lm -lncurses
+CFLAGS = -Wall -DPLATFORM_DESKTOP
 
-SRCS = $(shell find . -name '.ccls-cache' -type d -prune -o -type f -name '*.c' -print)
-HEADERS = $(shell find . -name '.ccls-cache' -type d -prune -o -type f -name '*.h' -print)
+LDFLAGS = -lm -lncurses
 
-main: $(SRCS) $(HEADERS)
-	$(CC) $(CFLAGS) $(SRCS) -o "$@"
+SRC = main.c
+TARGET = bitblaze
 
-main-debug: $(SRCS) $(HEADERS)
-	$(CC) $(CFLAGS) -O0 $(SRCS) -o "$@"
+all: $(TARGET)
+
+$(TARGET): $(SRC)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:
-	rm -f main main-debug
+	rm -f $(TARGET)
+
